@@ -18,7 +18,7 @@ def parse_tfrecord_tf(record):
     features = tf.parse_single_example(record, features={
         'shape': tf.FixedLenFeature([3], tf.int64),
         'data': tf.FixedLenFeature([], tf.string)})
-    data = tf.decode_raw(features['data'], tf.uint8)
+    data = tf.decode_raw(features['data'], tf.uint16)
     return tf.reshape(data, features['shape'])
 
 def parse_tfrecord_np(record):
@@ -26,7 +26,7 @@ def parse_tfrecord_np(record):
     ex.ParseFromString(record)
     shape = ex.features.feature['shape'].int64_list.value
     data = ex.features.feature['data'].bytes_list.value[0]
-    return np.fromstring(data, np.uint8).reshape(shape)
+    return np.fromstring(data, np.uint16).reshape(shape)
 
 #----------------------------------------------------------------------------
 # Dataset class that loads data from tfrecords files.
@@ -47,8 +47,8 @@ class TFRecordDataset:
         self.resolution         = None
         self.resolution_log2    = None
         self.shape              = []        # [channel, height, width]
-        self.dtype              = 'uint8'
-        self.dynamic_range      = [0, 255]
+        self.dtype              = 'uint16'
+        self.dynamic_range      = [0, 65535]
         self.label_file         = label_file
         self.label_size         = None      # [component]
         self.label_dtype        = None
@@ -169,7 +169,7 @@ class TFRecordDataset:
 # Base class for datasets that are generated on the fly.
 
 class SyntheticDataset:
-    def __init__(self, resolution=1024, num_channels=3, dtype='uint8', dynamic_range=[0,255], label_size=0, label_dtype='float32'):
+    def __init__(self, resolution=1024, num_channels=3, dtype='uint16', dynamic_range=[0,65535], label_size=0, label_dtype='float32'):
         self.resolution         = resolution
         self.resolution_log2    = int(np.log2(resolution))
         self.shape              = [num_channels, resolution, resolution]
