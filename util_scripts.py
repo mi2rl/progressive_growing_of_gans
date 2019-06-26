@@ -39,8 +39,8 @@ def generate_fake_images(run_id, snapshot=None, grid_size=[1,1], num_pngs=1, ima
         print('Generating png %d / %d...' % (png_idx, num_pngs))
         latents = misc.random_latents(np.prod(grid_size), Gs, random_state=random_state)
         labels = np.zeros([latents.shape[0], 0], np.float32)
-        images = Gs.run(latents, labels, minibatch_size=minibatch_size, num_gpus=config.num_gpus, out_mul=127.5, out_add=127.5, out_shrink=image_shrink, out_dtype=np.uint8)
-        misc.save_image_grid(images, os.path.join(result_subdir, '%s%06d.png' % (png_prefix, png_idx)), [0,255], grid_size)
+        images = Gs.run(latents, labels, minibatch_size=minibatch_size, num_gpus=config.num_gpus, out_mul=32767.5, out_add=32767.5, out_shrink=image_shrink, out_dtype=np.uint16)
+        misc.save_image_grid(images, os.path.join(result_subdir, '%s%06d.png' % (png_prefix, png_idx)), [0,65535], grid_size)
     open(os.path.join(result_subdir, '_done.txt'), 'wt').close()
 
 #----------------------------------------------------------------------------
@@ -68,7 +68,7 @@ def generate_interpolation_video(run_id, snapshot=None, grid_size=[1,1], image_s
         frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
         latents = all_latents[frame_idx]
         labels = np.zeros([latents.shape[0], 0], np.float32)
-        images = Gs.run(latents, labels, minibatch_size=minibatch_size, num_gpus=config.num_gpus, out_mul=127.5, out_add=127.5, out_shrink=image_shrink, out_dtype=np.uint8)
+        images = Gs.run(latents, labels, minibatch_size=minibatch_size, num_gpus=config.num_gpus, out_mul=32767.5, out_add=32767.5, out_shrink=image_shrink, out_dtype=np.uint16)
         grid = misc.create_image_grid(images, grid_size).transpose(1, 2, 0) # HWC
         if image_zoom > 1:
             grid = scipy.ndimage.zoom(grid, [image_zoom, image_zoom, 1], order=0)
@@ -156,7 +156,7 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
     # Initialize dataset and select minibatch size.
     dataset_obj, mirror_augment = misc.load_dataset_for_previous_run(result_subdir, verbose=True, shuffle_mb=0)
     if minibatch_size is None:
-        minibatch_size = np.clip(8192 // dataset_obj.shape[1], 4, 256)
+        minibatch_size = np.clip(8192 // dataset_obj.shape[1], 4, 65536)
 
     # Initialize metrics.
     metric_objs = []
@@ -165,12 +165,12 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
         print('Initializing %s...' % class_name)
         class_def = tfutil.import_obj(class_name)
         image_shape = [3] + dataset_obj.shape[1:]
-        obj = class_def(num_images=num_images, image_shape=image_shape, image_dtype=np.uint8, minibatch_size=minibatch_size)
+        obj = class_def(num_images=num_images, image_shape=image_shape, image_dtype=np.uint16, minibatch_size=minibatch_size)
         tfutil.init_uninited_vars()
         mode = 'warmup'
         obj.begin(mode)
         for idx in range(10):
-            obj.feed(mode, np.random.randint(0, 256, size=[minibatch_size]+image_shape, dtype=np.uint8))
+            obj.feed(mode, np.random.randint(0, 65535, size=[minibatch_size]+image_shape, dtype=np.uint16))
         obj.end(mode)
         metric_objs.append(obj)
 
@@ -224,7 +224,7 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
             for begin in range(0, num_images, minibatch_size):
                 end = min(begin + minibatch_size, num_images)
                 latents = misc.random_latents(end - begin, Gs)
-                images = Gs.run(latents, labels[begin:end], num_gpus=config.num_gpus, out_mul=127.5, out_add=127.5, out_dtype=np.uint8)
+                images = Gs.run(latents, labels[begin:end], num_gpus=config.num_gpus, out_mul=32767.5, out_add=32767.5, out_dtype=np.uint16)
                 if images.shape[1] == 1:
                     images = np.tile(images, [1, 3, 1, 1]) # grayscale => RGB
                 [obj.feed(mode, images) for obj in metric_objs]
