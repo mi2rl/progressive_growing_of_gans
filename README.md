@@ -1,8 +1,8 @@
 ## Progressive Growing of GANs for Improved Quality, Stability, and Variation<br><i>– Official TensorFlow implementation of the ICLR 2018 paper</i>
 
-Modified for training/generating 16-bit images by Hyun-Jin Bae 
-
 **Tero Karras** (NVIDIA), **Timo Aila** (NVIDIA), **Samuli Laine** (NVIDIA), **Jaakko Lehtinen** (NVIDIA and Aalto University)
+
+Modified for training/generating 16-bit images by Hyun-Jin Bae 
 
 * For business inquiries, please contact **[researchinquiries@nvidia.com](mailto:researchinquiries@nvidia.com)**
 * For press and other inquiries, please contact Hector Marinez at **[hmarinez@nvidia.com](mailto:hmarinez@nvidia.com)**
