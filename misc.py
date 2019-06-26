@@ -67,8 +67,8 @@ def convert_to_pil_image(image, drange=[0,1]):
         else:
             image = image.transpose(1, 2, 0) # CHW -> HWC
 
-    image = adjust_dynamic_range(image, drange, [0,255])
-    image = np.rint(image).clip(0, 255).astype(np.uint8)
+    image = adjust_dynamic_range(image, drange, [0,65535])
+    image = np.rint(image).clip(0, 65535).astype(np.uint16)
     format = 'RGB' if image.ndim == 3 else 'L'
     return PIL.Image.fromarray(image, format)
 
